@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -96,15 +97,31 @@
         }
 
         @keyframes pop {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-            100% { transform: scale(1); }
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.1);
+            }
+
+            100% {
+                transform: scale(1);
+            }
         }
 
         @keyframes flip {
-            0% { transform: rotateX(0); }
-            50% { transform: rotateX(90deg); }
-            100% { transform: rotateX(0); }
+            0% {
+                transform: rotateX(0);
+            }
+
+            50% {
+                transform: rotateX(90deg);
+            }
+
+            100% {
+                transform: rotateX(0);
+            }
         }
 
         .keyboard {
@@ -211,8 +228,19 @@
                 min-width: 52px;
             }
         }
+
+        #confetti-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 999;
+        }
     </style>
 </head>
+
 <body>
     <div class="header">
         <h1>WORD GUESS</h1>
@@ -260,6 +288,7 @@
     </div>
 
     <div class="message" id="message"></div>
+    <canvas id="confetti-canvas"></canvas>
 
     <script>
         // Word list - common 5-letter words
@@ -589,6 +618,12 @@
 
             const guess = getCurrentWord();
 
+            if (guessedWords.includes(guess)) {
+                showMessage("Word already guessed");
+                shakeRow();
+                return;
+            }
+
             if (!VALID_WORDS.includes(guess)) {
                 showMessage("Not in word list");
                 shakeRow();
@@ -702,6 +737,68 @@
                     tile.style.animation = "bounce 0.5s";
                 }, index * 100);
             });
+            startConfetti();
+        }
+
+        // Confetti Animation
+        function startConfetti() {
+            const canvas = document.getElementById('confetti-canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+
+            const particles = [];
+            const colors = ['#f44336', '#e91e63', '#9c27b0', '#673ab7', '#3f51b5', '#2196f3', '#03a9f4', '#00bcd4', '#009688', '#4caf50', '#8bc34a', '#cddc39', '#ffeb3b', '#ffc107', '#ff9800', '#ff5722'];
+
+            function createParticle() {
+                const x = Math.random() * canvas.width;
+                const y = -10;
+                const size = Math.random() * 10 + 5;
+                const color = colors[Math.floor(Math.random() * colors.length)];
+                const speedY = Math.random() * 3 + 2;
+                const speedX = Math.random() * 2 - 1;
+                const rotation = Math.random() * 360;
+                const rotationSpeed = Math.random() * 10 - 5;
+
+                particles.push({ x, y, size, color, speedY, speedX, rotation, rotationSpeed });
+            }
+
+            function updateParticles() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                if (particles.length < 200) {
+                    createParticle();
+                }
+
+                for (let i = 0; i < particles.length; i++) {
+                    const p = particles[i];
+                    p.y += p.speedY;
+                    p.x += p.speedX;
+                    p.rotation += p.rotationSpeed;
+
+                    ctx.save();
+                    ctx.translate(p.x, p.y);
+                    ctx.rotate(p.rotation * Math.PI / 180);
+                    ctx.fillStyle = p.color;
+                    ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+                    ctx.restore();
+
+                    if (p.y > canvas.height) {
+                        particles.splice(i, 1);
+                        i--;
+                    }
+                }
+
+                if (!gameOver) return; // Stop if game resets (though currently no reset implemented)
+                requestAnimationFrame(updateParticles);
+            }
+
+            // Run for 5 seconds
+            const animationId = requestAnimationFrame(updateParticles);
+            setTimeout(() => {
+                cancelAnimationFrame(animationId);
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+            }, 5000);
         }
 
         // Add shake animation
@@ -723,4 +820,5 @@
         init();
     </script>
 </body>
+
 </html>
